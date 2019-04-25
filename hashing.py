@@ -63,7 +63,7 @@ def func2(STRING_LENGTH=6,ZEROS_LENGTH=4,TRY_LIMIT=100000000):
             break
     
 def func3():
-    #simple password crack demonstration using a stupid version of brute force
+    #simple password crack demonstration using a "stupid" version of brute force attack
     password='ABC'
     hashed_password=hashlib.sha1(password).hexdigest()
     alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -78,24 +78,4 @@ def func3():
             print("Password cracked!")
             print("{0} tries were taken".format(n))
             break
-
-def func4():   
-    #https://www.pythoncentral.io/hashing-strings-with-python/
-    def hash_password(password):
-        # uuid is used to generate a random number
-        salt = uuid.uuid4().hex
-        return hashlib.sha256(salt.encode() + password.encode()).hexdigest() + ':' + salt
-    
-    def check_password(hashed_password, user_password):
-        password, salt = hashed_password.split(':')
-        return password == hashlib.sha256(salt.encode() + user_password.encode()).hexdigest()
-
-    new_pass = raw_input('Please enter a password: ')
-    hashed_password = hash_password(new_pass)
-    print('The string to store in the db is: ' + hashed_password)
-    old_pass = raw_input('Now please enter the password again to check: ')
-    if check_password(hashed_password, old_pass):
-        print('You entered the right password')
-    else:
-        print('I am sorry but the password does not match')
         
