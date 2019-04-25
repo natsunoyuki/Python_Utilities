@@ -96,20 +96,20 @@ payee='Miki'
 amount=20
 pay_coins(payer,payee,amount)
 
-print "Miki pays Yumi 10 coins"
+print "Miki pays Yurie 10 coins"
 payer='Miki'
-payee='Yumi'
+payee='Yurie'
 amount=10
 pay_coins(payer,payee,amount)
 
-print "Yumi tries to pay Natsume 20 coins despite having only 10"
-payer='Yumi'
+print "Yurie tries to pay Natsume 20 coins despite having only 10"
+payer='Yurie'
 payee='Natsume'
 amount=20
 pay_coins(payer,payee,amount)
 
-print "Yumi then tries to pay Natsume 10 coins"
-payer='Yumi'
+print "Yurie then tries to pay Natsume 10 coins"
+payer='Yurie'
 payee='Natsume'
 amount=10
 pay_coins(payer,payee,amount)
