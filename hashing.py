@@ -62,20 +62,5 @@ def func2(STRING_LENGTH=6,ZEROS_LENGTH=4,TRY_LIMIT=100000000):
             print("Time elapsed: %.1f s" % (time.time()-STARTTIME))
             break
     
-def func3():
-    #simple password crack demonstration using a "stupid" version of brute force attack
-    password='ABC'
-    hashed_password=hashlib.sha1(password).hexdigest()
-    alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    n=0
-    while True:
-        guess=alphabet[random.randint(0,len(alphabet)-1)]
-        guess=guess+alphabet[random.randint(0,len(alphabet)-1)]
-        guess=guess+alphabet[random.randint(0,len(alphabet)-1)]
-        hashed_guess=hashlib.sha1(guess).hexdigest()
-        n=n+1
-        if hashed_guess==hashed_password:
-            print("Password cracked!")
-            print("{0} tries were taken".format(n))
-            break
+
         
