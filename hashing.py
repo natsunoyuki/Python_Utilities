@@ -12,7 +12,13 @@ the strings must first be encoded to bytes!!!
 e.g. b'Hello World!' or str.encode('Hello World!')
 """
 
-def func(STRING_LENGTH=6):
+def sha256(x):
+    if(type(x)!=str):
+        x=str(x)
+    x=hashlib.sha256(x).hexdigest()
+    return x
+
+def proofOfWork(STRING_LENGTH=6):
     N=STRING_LENGTH
     #This function shows a very basic example of proof-of-work explained in
     #https://en.bitcoin.it/wiki/Proof_of_work
@@ -30,7 +36,7 @@ def func(STRING_LENGTH=6):
         n=n+1
     print("Needed iterations for '{0}' = {1}".format(A,n))
     
-def func2(STRING_LENGTH=6,ZEROS_LENGTH=4,TRY_LIMIT=100000000):
+def proofOfWork2(STRING_LENGTH=6,ZEROS_LENGTH=4,TRY_LIMIT=100000000):
     #this function shows another example of proof-of-work where the task is to
     #find another string with at least a certain number of leading zeros.
     N=STRING_LENGTH
@@ -62,5 +68,41 @@ def func2(STRING_LENGTH=6,ZEROS_LENGTH=4,TRY_LIMIT=100000000):
             print("Time elapsed: %.1f s" % (time.time()-STARTTIME))
             break
     
+def passwordCrack():
+    #simple password crack demonstration using a stupid version of brute force
+    password='ABC'
+    hashed_password=hashlib.sha1(password).hexdigest()
+    alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    n=0
+    while True:
+        guess=alphabet[random.randint(0,len(alphabet)-1)]
+        guess=guess+alphabet[random.randint(0,len(alphabet)-1)]
+        guess=guess+alphabet[random.randint(0,len(alphabet)-1)]
+        hashed_guess=hashlib.sha1(guess).hexdigest()
+        n=n+1
+        if hashed_guess==hashed_password:
+            print("Password cracked!")
+            print("{0} tries were taken".format(n))
+            break
 
+def hashPassword():   
+    #this code was obtained from:
+    #https://www.pythoncentral.io/hashing-strings-with-python/
+    def hash_password(password):
+        # uuid is used to generate a random number
+        salt = uuid.uuid4().hex
+        return hashlib.sha256(salt.encode() + password.encode()).hexdigest() + ':' + salt
+    
+    def check_password(hashed_password, user_password):
+        password, salt = hashed_password.split(':')
+        return password == hashlib.sha256(salt.encode() + user_password.encode()).hexdigest()
+
+    new_pass = raw_input('Please enter a password: ')
+    hashed_password = hash_password(new_pass)
+    print('The string to store in the db is: ' + hashed_password)
+    old_pass = raw_input('Now please enter the password again to check: ')
+    if check_password(hashed_password, old_pass):
+        print('You entered the right password')
+    else:
+        print('I am sorry but the password does not match')
         
