@@ -43,7 +43,6 @@ from sklearn.pipeline import make_pipeline
 import os
 #For reference this line is 80 characters long#################################
 
-DATA_PATH='./'
 
 def scatterPlot(X,y,feature1,feature2,targetNames):
     for i in range(len(targetNames)):
@@ -65,8 +64,7 @@ def visualize_classifier(model,X,y,ax=None,cmap='rainbow'):
     contours=ax.contourf(xx,yy,Z,alpha=0.3,levels=arange(n_classes+1)-0.5,cmap=cmap,clim=(y.min(),y.max()),zorder=1)
     ax.set(xlim=xlim,ylim=ylim)
     
-def eval_on_features(features,target,regressor):
-    n_train=184
+def eval_on_features(features,target,regressor,n_train=184):
     X_train,X_test=features[:n_train],features[n_train:]
     y_train,y_test=target[:n_train],target[n_train:]
     regressor.fit(X_train,y_train)
@@ -84,36 +82,6 @@ def eval_on_features(features,target,regressor):
     plt.xlabel('Date')
     plt.ylabel('Rentals')    
     
-def load_citibike():
-    data_mine = pd.read_csv(os.path.join(DATA_PATH, "citibike.csv"))
-    data_mine['one'] = 1 #adds a new column to the data frame 'one'
-    #this column serves as a time stamp, in this case the a counter
-    #for the number of bike rentals within a 3h block
-    data_mine['starttime'] = pd.to_datetime(data_mine.starttime)
-    #originally, starttime is in the 8/31/2015 23:53:03 format. This changes
-    #it to the 2015-08-31 23:53:03 format.
-    data_starttime = data_mine.set_index("starttime")
-    #Set the DataFrame index (row labels) using one or more existing columns.
-    #This sets the indexing column of the data frame to starttime rather than
-    #the standard numerical index
-    data_resampled = data_starttime.resample("3h").sum().fillna(0)
-    #Downsample the series into 3 minute bins and sum the values of the 
-    #timestamps falling into a bin.
-    #somehow .resample() removes stoptime, end station name, start station
-    #name and usertype from the data frame
-    #.sum() sums the cumulative time stamp values within each 3h block
-    #.fillna(0) fills NA/NaN values using the specified method, 0 in this case
-    return data_resampled.one    
-
-def load_citibike_dense():
-    #resamples to 1h instead of 3h for a denser data set
-    data_mine = pd.read_csv(os.path.join(DATA_PATH, "citibike.csv"))
-    data_mine['one'] = 1
-    data_mine['starttime'] = pd.to_datetime(data_mine.starttime)
-    data_starttime = data_mine.set_index("starttime")
-    data_resampled = data_starttime.resample("1h").sum().fillna(0)
-    return data_resampled.one    
-
 def make_signals():
     # fix a random state seed
     rng = random.RandomState(42)
@@ -123,11 +91,9 @@ def make_signals():
     s1 = sin(2 * time)  # Signal 1 : sinusoidal signal
     s2 = sign(sin(3 * time))  # Signal 2 : square signal
     s3 = signal.sawtooth(2 * pi * time)  # Signal 3: saw tooth signal
-
     # concatenate the signals, add noise
     S = c_[s1, s2, s3]
     S += 0.2 * rng.normal(size=S.shape)
-
     S /= S.std(axis=0)  # Standardize data
     S -= S.min()
     return S
@@ -148,38 +114,3 @@ def make_wave(n_samples=100):
     y = (y_no_noise + rnd.normal(size=len(x))) / 2
     return x.reshape(-1, 1), y
 
-def load_extended_boston():
-    boston = load_boston()
-    X = boston.data
-
-    X = MinMaxScaler().fit_transform(boston.data)
-    X = PolynomialFeatures(degree=2, include_bias=False).fit_transform(X)
-    return X, boston.target
-    
-#X,y=make_blobs(n_samples=1000,centers=10,random_state=0,cluster_std=1)
-#Xtrain,Xtest,ytrain,ytest=train_test_split(X,y,random_state=0,train_size=0.5)
-
-#rfc=RandomForestClassifier(n_estimators=100,random_state=0)
-#rfc.fit(Xtrain,ytrain)
-#yfit=rfc.predict(Xtest)
-
-#forest=RandomForestRegressor(100)
-#forest.fit(Xtrain,ytrain)
-#yfit=forest.predict(Xtest)
-
-#either use this:
-#visualize_classifier(rfc,X,y)
-#or this:
-#plt.scatter(Xtrain[:,0],Xtrain[:,1],c=ytrain,cmap='rainbow')
-#plt.scatter(Xtest[:,0],Xtest[:,1],c=yfit,alpha=0.5,cmap='rainbow')
-
-#mat=confusion_matrix(ytest,yfit)
-#sns.heatmap(mat.T,square=True,annot=True,fmt='d',cbar=False)
-#plt.xlabel('true label')
-#plt.ylabel('predicted label')
-
-
-#svc=SVC()
-#svc.fit(Xtrain,ytrain)
-#plt.figure()
-#visualize_classifier(svc,X,y)
