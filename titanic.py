@@ -6,9 +6,16 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import StandardScaler
 import warnings
+import time
+
+
 warnings.filterwarnings('ignore')
+
+STARTTIME = time.time()
 
 #data directory. Change as necessary!
 directory = "/Users/yumi/Downloads/titanic/"
@@ -66,6 +73,8 @@ def checkForNan(DF,COLUMN):
     return X.sum()
          
 def binColumn(TRAIN,TEST,COL,N):   
+    #this function bins the data in a particular column COL of both the train &
+    #test dataframes into N+1 different bins.
     nanflag=pd.isnull(TRAIN[COL]).sum()+pd.isnull(TEST[COL]).sum()   
     maxVal = int(ceil(max([TRAIN[COL].max(),TEST[COL].max()])))
     #in the case where the float max value is equal to the int max value,
@@ -89,8 +98,27 @@ def binColumn(TRAIN,TEST,COL,N):
         TEST[new_col]=nan
         TRAIN[new_col][pd.notnull(TRAIN[COL])]=new_col_train
         TEST[new_col][pd.notnull(TEST[COL])]=new_col_test
-    return TRAIN,TEST
-    
+    return TRAIN,TEST,bins,labels
+
+def binColumnCustom(TRAIN,TEST,COL,BINS,WRITEOVER=False):
+    #unlike the previous function, this one bins the data in COL of train and
+    #test using the provided BINS
+    TRAIN["Binned_"+COL.lower()]=nan
+    TEST["Binned_"+COL.lower()]=nan
+    for i in range(1,1+len(BINS[1:])):
+        LOWERLIM=BINS[i-1]
+        UPPERLIM=BINS[i]
+        TRAIN.loc[(TRAIN[COL]<UPPERLIM)&(TRAIN[COL]>=LOWERLIM),"Binned_"+COL.lower()]=i
+        if WRITEOVER:
+            TRAIN.loc[(TRAIN[COL]<UPPERLIM)&(TRAIN[COL]>=LOWERLIM),COL]=(UPPERLIM+LOWERLIM)/2
+    for i in range(1,1+len(BINS[1:])):
+        LOWERLIM=BINS[i-1]
+        UPPERLIM=BINS[i]
+        TEST.loc[(TEST[COL]<UPPERLIM)&(TEST[COL]>=LOWERLIM),"Binned_"+COL.lower()]=i
+        if WRITEOVER:
+            TEST.loc[(TEST[COL]<UPPERLIM)&(TEST[COL]>=LOWERLIM),COL]=(UPPERLIM+LOWERLIM)/2
+    return TRAIN,TEST 
+
 #end function list
       
 #load the necessary data          
@@ -106,8 +134,15 @@ for i in unique(honorifics):
 TRAIN["Honorific"] = pd.DataFrame(honorifics[:len(TRAIN)])
 TEST["Honorific"] = pd.DataFrame(honorifics[len(TRAIN):])
 
+#calculate the number of travelling companions for each passenger
 TRAIN["Companions"] = TRAIN["SibSp"] + TRAIN["Parch"]
 TEST["Companions"] = TEST["SibSp"] + TEST["Parch"]
+
+#also determine if the passenger is alone
+TRAIN["Is_alone"] = 0
+TEST["Is_alone"] = 0
+TRAIN.loc[TRAIN['Companions'] == 0, 'Is_alone'] = 1
+TEST.loc[TEST['Companions'] == 0, 'Is_alone'] = 1
 
 CABINS = []
 for i in range(len(TRAIN.Cabin)):
@@ -122,7 +157,7 @@ for i in range(len(CABINS)):
         #replace NaN with N
         CABINS[i] = "N"
 
-print "Unique cabin numbers:"
+print "Unique cabin letters:"
 for i in unique(CABINS):
     print "{}:{}".format(i,CABINS.count(i))
 
@@ -170,11 +205,28 @@ TEST["Embarked"]=TEST["Embarked"].replace({"C":0,"Q":1,"S":2})
 fareMode = TEST["Fare"].mode()
 TEST["Fare"] = TEST["Fare"].fillna(fareMode.values[0])
 
-#bin fares
-TRAIN,TEST = binColumn(TRAIN,TEST,"Fare",20)
+#bin fares using a specific cut
+fareBins = array([0,8,15,32,999])
+#fareBins = arange(0,513+27,27)
+TRAIN,TEST=binColumnCustom(TRAIN,TEST,"Fare",fareBins)
 
-#bin ages
-TRAIN,TEST = binColumn(TRAIN,TEST,"Age",10)
+#bin fares using a uniform cut
+#TRAIN,TEST,fareBins,fareLabels = binColumn(TRAIN,TEST,"Fare",20)
+print "Binned fare value_counts():"
+print TRAIN.Binned_fare.value_counts()
+print TEST.Binned_fare.value_counts()
+
+#bin ages using a specific cut
+#ageBins = array([0,16,32,48,64,99])
+#ageBins = array([0,20,45,100])
+ageBins = array([0,16,32,48,64,80,99])
+TRAIN,TEST=binColumnCustom(TRAIN,TEST,"Age",ageBins)
+
+#bin ages using a uniform cut
+#TRAIN,TEST,ageBins,ageLabels = binColumn(TRAIN,TEST,"Age",5)
+#print "Binned age value_counts():"
+#print TRAIN.Binned_age.value_counts()
+#print TEST.Binned_age.value_counts()
 
 #now we need to deal with the overwhelmingly large number of null values in Age
 #we will attempt to predict the missing age values using AI...
@@ -202,12 +254,17 @@ print "len(yAGE): {}, len(yAGE_train): {}, len(yAGE_test): {}".format(len(yAGE),
 #attempt to predict the missing age values using a RandomForestClassifier with
 #gridsearch
 X1,X2,y1,y2 = train_test_split(XAGE_train,yAGE_train)
+#use RandomForestClassifier ?
 param_grid={"n_estimators":[10,50,100,150,200]}
 grid_search = GridSearchCV(RandomForestClassifier(),param_grid,cv=5)
 grid_search.fit(X1,y1)
 print "Age fitting complete... best params: {}".format(grid_search.best_params_)
 print "Age train score: {}".format(grid_search.score(X1,y1)) 
 print "Age test score: {}".format(grid_search.score(X2,y2)) 
+#rebuild the model using the best params and all data before prediction:
+grid_search=RandomForestClassifier(n_estimators=grid_search.best_params_["n_estimators"])
+grid_search.fit(XAGE_train,yAGE_train)
+print "Age train score: {}".format(grid_search.score(XAGE_train,yAGE_train)) 
 yAGE_pred = grid_search.predict(XAGE_test) #predict the missing ages
 
 for i in range(len(yAGE_pred)):
@@ -223,6 +280,10 @@ nanindex1 = TEST.Binned_age[pd.isnull(TEST.Binned_age)].index
 for i in range(len(nanindex1)):
     index_to_insert = nanindex1[i]
     TEST.Binned_age.iloc[index_to_insert] = yAGE_test.iloc[i+len(nanindex)]  
+
+print "Binned age value_counts():"
+print TRAIN.Binned_age.value_counts()
+print TEST.Binned_age.value_counts()
 
 #final null check
 print "Number of null values per column in TRAIN:"
@@ -243,29 +304,42 @@ for i in TEST.columns:
 #end feature engineering
 
 #extract features and target to train the machine with
-features = ["Pclass","Sex","Binned_age","SibSp","Parch","Companions","In_cabin","Binned_fare","Embarked","Honorific"]
+features = ["Pclass","Sex","Binned_age","Is_alone","Companions","In_cabin","Binned_fare","Embarked","Honorific"]
 X_train = TRAIN[features]
 y_train = TRAIN["Survived"]
 X_test = TEST[features]
-X1,X2,y1,y2 = train_test_split(X_train,y_train)
+#X1,X2,y1,y2 = train_test_split(X_train,y_train)
+
+#if we use SVC we should scale the features first!
+ss = StandardScaler()
+ss.fit(X_train)
+X_train = ss.transform(X_train)
+X_test = ss.transform(X_test)
 
 #grid search using RandomForestClassifier
 #param_grid={"n_estimators":[10,50,100,150,200]}
 #rfc_grid = GridSearchCV(RandomForestClassifier(),param_grid,cv=5)
-#rfc_grid.fit(X1,y1)
+#rfc_grid.fit(X_train,y_train)
 #print "Fitting complete... best params: {}".format(rfc_grid.best_params_)
-#print "Train score: {}".format(rfc_grid.score(X1,y1)) 
-#print "Test score: {}".format(rfc_grid.score(X2,y2)) 
+#print "Train score: {}".format(rfc_grid.score(X_train,y_train)) 
 
 #grid search using SVC
-param_grid={"C":[10**i for i in range(-5,5+1,1)],"gamma":[10**i for i in range(-5,5+1,1)]}
-svc_grid = GridSearchCV(SVC(kernel="rbf"),param_grid,cv=5)
-svc_grid.fit(X1,y1)
-print "Fitting complete... best params: {}".format(svc_grid.best_params_)
-print "Train score: {}".format(svc_grid.score(X1,y1)) 
-print "Test score: {}".format(svc_grid.score(X2,y2)) 
+#param_grid={"C":[10**i for i in range(-5,5+1,1)],"gamma":[10**i for i in range(-5,5+1,1)]}
+#svc_grid = GridSearchCV(SVC(kernel="rbf"),param_grid,cv=5)
+#svc_grid.fit(X_train,y_train)
+#print "Fitting complete... best params: {}".format(svc_grid.best_params_)
+#print "Train score: {}".format(svc_grid.score(X_train,y_train)) 
+
+#grid search using MLPClassifier
+param_grid={"alpha":[10**i for i in range(-5,5+1,1)]}
+mlpc_grid=GridSearchCV(MLPClassifier(),param_grid,cv=5)
+mlpc_grid.fit(X_train,y_train)
+print "Fitting complete... best params: {}".format(mlpc_grid.best_params_)
+print "Train score: {}".format(mlpc_grid.score(X_train,y_train)) 
 
 #make a prediction:
-y_pred = svc_grid.predict(X_test)
+y_pred = mlpc_grid.predict(X_test)
 y_pred = pd.DataFrame({"PassengerId":TEST.PassengerId,"Survived":y_pred})
 y_pred.to_csv("survived.csv",index=False)
+
+print "Elapsed time: {:.2f}s".format(time.time()-STARTTIME)
