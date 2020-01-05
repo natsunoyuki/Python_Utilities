@@ -76,43 +76,10 @@ def pay_coins(payer,payee,amount):
         MyBlockChain.append(next_block(MyBlockChain[len(MyBlockChain)-1],transaction,2))
 
 #genesis block introduces 100 coins into the world in Natsume's account
-MyBlockChain=[create_genesis_block(2)]
+MyBlockChain = [create_genesis_block(2)]
 
-print "Natsume pays Miki 10 coins"
-payer='Natsume'
-payee='Miki'
-amount=10
-pay_coins(payer,payee,amount)
-
-print "Natsume pays Naomi 30 coins"
-payer='Natsume'
-payee='Naomi'
-amount=30
-pay_coins(payer,payee,amount)
-
-print "Naomi pays Miki 20 coins"
-payer='Naomi'
-payee='Miki'
-amount=20
-pay_coins(payer,payee,amount)
-
-print "Miki pays Yurie 10 coins"
-payer='Miki'
-payee='Yurie'
-amount=10
-pay_coins(payer,payee,amount)
-
-print "Yurie tries to pay Natsume 20 coins despite having only 10"
-payer='Yurie'
-payee='Natsume'
-amount=20
-pay_coins(payer,payee,amount)
-
-print "Yurie then tries to pay Natsume 10 coins"
-payer='Yurie'
-payee='Natsume'
-amount=10
-pay_coins(payer,payee,amount)
-
-for i in MyBlockChain:
-    print i
+print("Natsume pays Miki 10 coins...")
+payer = 'Natsume'
+payee = 'Miki'
+amount = 10
+pay_coins(payer, payee, amount)
