@@ -14,7 +14,7 @@ e.g. b'Hello World!' or str.encode('Hello World!')
 
 def sha256(x):
     if(type(x)!=str):
-        x=str(x)
+        x=str(x).encode("utf-8")
     x=hashlib.sha256(x).hexdigest()
     return x
 
